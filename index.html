@@ -2,36 +2,25 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8"/>
-  <meta http-equiv="refresh" content="0; url=login.html"/>
-  <title>تسجيل رحلة العمرة 2026</title>
-
-  <script>
-    // تحويل احتياطي لو meta refresh ما اشتغلش
-    window.location.href = "login.html";
-  </script>
-
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>رحلة العمرة 2026</title>
   <style>
-    body{
-      font-family: Arial, sans-serif;
-      background:#f6f7fb;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      height:100vh;
-      margin:0;
-    }
-    .box{
-      background:#fff;
-      padding:24px;
-      border-radius:16px;
-      box-shadow:0 10px 30px rgba(0,0,0,.08);
-      text-align:center;
-    }
+    body{font-family:Arial,sans-serif;background:#f6f7fb;margin:0;height:100vh;display:flex;align-items:center;justify-content:center}
+    .box{background:#fff;padding:22px 20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);text-align:center;max-width:520px}
+    a{display:inline-block;margin-top:10px;background:#2e7d32;color:#fff;text-decoration:none;padding:10px 14px;border-radius:12px}
   </style>
 </head>
 <body>
   <div class="box">
-    جاري تحويلك إلى صفحة التسجيل...
+    جاري تحويلك إلى صفحة الدخول...
+    <br/>
+    <a href="./login.html">لو لم يتم التحويل اضغط هنا</a>
   </div>
+
+  <script>
+    // تحويل فوري + احتياطي
+    try { window.location.replace("./login.html"); } catch(e) { window.location.href="./login.html"; }
+    setTimeout(()=>{ window.location.href = "./login.html"; }, 800);
+  </script>
 </body>
 </html>
