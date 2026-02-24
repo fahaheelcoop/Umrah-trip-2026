@@ -146,9 +146,10 @@
   }
 
   function toggleCompanion(){
-    document.getElementById("companionBox").style.display =
-      document.getElementById("has_companion").value === "yes" ? "block" : "none";
-  }
+  const v = document.getElementById("has_companion").value; // no | spouse | mahram
+  const box = document.getElementById("companionBox");
+  box.style.display = (v !== "no") ? "block" : "none";
+}
 
   function showMsg(text, type){
     const out = document.getElementById("out");
@@ -281,6 +282,7 @@ const has_companion = companionType !== "no";
   }
 
   loadLogin();
+toggleCompanion();
 </script>
 </body>
 </html>
