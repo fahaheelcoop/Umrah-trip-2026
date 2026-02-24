@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>تسجيل بيانات العمرة 2026</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;background:#f6f7fb;margin:0;padding:24px}
+    .wrap{max-width:820px;margin:auto}
+    .card{background:#fff;padding:22px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    h2{margin:0 0 14px;text-align:center}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:block;margin:10px 0 6px;font-weight:700}
+    input,select{width:100%;padding:11px;border-radius:10px;border:1px solid #d8d8d8}
+    .full{grid-column:1/-1}
+    button{width:100%;margin-top:16px;padding:13px 16px;background:#2e7d32;color:#fff;border:0;border-radius:12px;cursor:pointer;font-size:16px}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .note{font-size:13px;color:#666;margin-top:8px}
+    .msg{margin-top:14px;padding:12px;border-radius:12px;background:#f1f5ff;color:#123}
+    .err{background:#fff3f3;color:#900}
+    .ok{background:#f3fff3;color:#070}
+    .sep{height:1px;background:#eee;margin:16px 0}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h2>بيانات تسجيل العمرة 2026</h2>
+    <div id="out" class="msg" style="display:none"></div>
+
+    <div class="grid">
+      <div>
+        <label>الرقم المدني</label>
+        <input id="civil" disabled/>
+      </div>
+      <div>
+        <label>رقم الصندوق</label>
+        <input id="box" disabled/>
+      </div>
+
+      <div class="full">
+        <label>الاسم</label>
+        <input id="name" placeholder="الاسم الكامل"/>
+      </div>
+
+      <div>
+        <label>رقم الموبايل</label>
+        <input id="mobile" inputmode="tel" placeholder="مثال: 5xxxxxxx"/>
+      </div>
+      <div>
+        <label>البريد الإلكتروني</label>
+        <input id="email" inputmode="email" placeholder="example@email.com"/>
+      </div>
+
+      <div class="full">
+        <label>العنوان</label>
+        <input id="address" placeholder="المنطقة / الشارع / ..."/>
+      </div>
+
+      <div class="full">
+        <label>رقم جواز السفر</label>
+        <input id="passport_no" placeholder="Passport No."/>
+      </div>
+
+      <div class="full">
+        <label>صورة البطاقة المدنية (من تطبيق هويتي)</label>
+        <input id="app_civil_file" type="file" accept="image/*"/>
+        <div class="note">سيتم ضغط الصورة تلقائيًا قبل الإرسال.</div>
+      </div>
+
+      <div class="full">
+        <label>صورة جواز السفر</label>
+        <input id="app_passport_file" type="file" accept="image/*"/>
+        <div class="note">سيتم ضغط الصورة تلقائيًا قبل الإرسال.</div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <label>هل يوجد مرافق (زوج/زوجة)؟</label>
+    <select id="has_companion" onchange="toggleCompanion()">
+      <option value="no">لا</option>
+      <option value="yes">نعم</option>
+    </select>
+
+    <div id="companionBox" style="display:none;margin-top:10px">
+      <div class="grid">
+        <div class="full">
+          <label>اسم المرافق</label>
+          <input id="c_name" placeholder="اسم الزوج/الزوجة"/>
+        </div>
+        <div>
+          <label>الرقم المدني للمرافق</label>
+          <input id="c_civil" inputmode="numeric"/>
+        </div>
+        <div>
+          <label>رقم جواز المرافق</label>
+          <input id="c_passport_no"/>
+        </div>
+
+        <div class="full">
+          <label>صورة البطاقة المدنية للمرافق (هويتي)</label>
+          <input id="c_civil_file" type="file" accept="image/*"/>
+        </div>
+
+        <div class="full">
+          <label>صورة جواز المرافق</label>
+          <input id="c_passport_file" type="file" accept="image/*"/>
+        </div>
+      </div>
+    </div>
+
+    <button id="btn" onclick="submitForm()">إرسال البيانات</button>
+    <div class="note">بالضغط على إرسال، سيتم رفع الصور إلى Google Drive وتسجيل البيانات في Google Sheets.</div>
+  </div>
+</div>
+
+<script>
+  const API_URL = "PUT_YOUR_WEBAPP_URL_HERE";
+
+  // ضغط الصور
+  const IMG_MAX = 1600;     // أقصى بُعد (عرض/ارتفاع)
+  const JPG_QUALITY = 0.72; // جودة JPEG
+
+  function apiCall(params){
+    return new Promise((resolve, reject)=>{
+      const cbName = "__cb_" + Date.now() + "_" + Math.floor(Math.random()*100000);
+      params.callback = cbName;
+
+      const qs = new URLSearchParams(params).toString();
+      const s = document.createElement("script");
+      let done = false;
+
+      window[cbName] = (data)=>{
+        done = true;
+        cleanup();
+        resolve(data);
+      };
+
+      const t = setTimeout(()=>{
+        if(!done){ cleanup(); reject(new Error("TIMEOUT")); }
+      }, 30000);
+
+      function cleanup(){
+        clearTimeout(t);
+        try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; }
+        if(s && s.parentNode) s.parentNode.removeChild(s);
+      }
+
+      s.src = API_URL + "?" + qs;
+      s.onerror = ()=>{ cleanup(); reject(new Error("NETWORK_ERROR")); };
+      document.body.appendChild(s);
+    });
+  }
+
+  function toggleCompanion(){
+    document.getElementById("companionBox").style.display =
+      document.getElementById("has_companion").value === "yes" ? "block" : "none";
+  }
+
+  function showMsg(text, type){
+    const out = document.getElementById("out");
+    out.style.display="block";
+    out.className = "msg " + (type==="ok" ? "ok" : type==="err" ? "err" : "");
+    out.textContent = text;
+  }
+
+  function loadLogin(){
+    const raw = sessionStorage.getItem("umrah_login");
+    if(!raw){
+      location.href="login.html";
+      return;
+    }
+    const info = JSON.parse(raw);
+    document.getElementById("civil").value = info.civil_id || "";
+    document.getElementById("box").value = info.box_number || "";
+    if(info.full_name) document.getElementById("name").value = info.full_name;
+    if(info.mobile) document.getElementById("mobile").value = info.mobile;
+  }
+
+  // convert file -> compressed jpeg base64 (dataURL)
+  function fileToCompressedJpegBase64(file, maxDim, quality){
+    return new Promise((resolve, reject)=>{
+      if(!file) return resolve("");
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const w = img.width, h = img.height;
+          const scale = Math.min(1, maxDim / Math.max(w, h));
+          const nw = Math.round(w * scale);
+          const nh = Math.round(h * scale);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = nw; canvas.height = nh;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, nw, nh);
+
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(dataUrl);
+        };
+        img.onerror = ()=>reject(new Error("BAD_IMAGE"));
+        img.src = reader.result;
+      };
+      reader.onerror = ()=>reject(new Error("READ_ERROR"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function submitForm(){
+    const btn = document.getElementById("btn");
+    btn.disabled = true;
+    btn.textContent = "جاري الإرسال...";
+
+    try{
+      const civil_id = document.getElementById("civil").value.trim();
+      const box_number = document.getElementById("box").value.trim();
+
+      const applicant_name = document.getElementById("name").value.trim();
+      const mobile = document.getElementById("mobile").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const address = document.getElementById("address").value.trim();
+      const passport_no = document.getElementById("passport_no").value.trim();
+
+      // Required applicant files
+      const fCivil = document.getElementById("app_civil_file").files[0];
+      const fPass = document.getElementById("app_passport_file").files[0];
+      if(!fCivil || !fPass){
+        showMsg("من فضلك ارفع صورة البطاقة المدنية وصورة جواز السفر.", "err");
+        return;
+      }
+
+      const applicant_civil_base64 = await fileToCompressedJpegBase64(fCivil, IMG_MAX, JPG_QUALITY);
+      const applicant_passport_base64 = await fileToCompressedJpegBase64(fPass, IMG_MAX, JPG_QUALITY);
+
+      const has_companion = document.getElementById("has_companion").value === "yes";
+
+      let companion_name="", companion_civil_id="", companion_passport_no="";
+      let companion_civil_base64="", companion_passport_base64="";
+
+      if(has_companion){
+        companion_name = document.getElementById("c_name").value.trim();
+        companion_civil_id = document.getElementById("c_civil").value.trim();
+        companion_passport_no = document.getElementById("c_passport_no").value.trim();
+
+        const fc1 = document.getElementById("c_civil_file").files[0];
+        const fc2 = document.getElementById("c_passport_file").files[0];
+
+        if(!fc1 || !fc2){
+          showMsg("من فضلك ارفع صورة البطاقة المدنية وصورة جواز السفر للمرافق.", "err");
+          return;
+        }
+
+        companion_civil_base64 = await fileToCompressedJpegBase64(fc1, IMG_MAX, JPG_QUALITY);
+        companion_passport_base64 = await fileToCompressedJpegBase64(fc2, IMG_MAX, JPG_QUALITY);
+      }
+
+      const payload = {
+        civil_id, box_number,
+        applicant_name, mobile, email, address, passport_no,
+        applicant_civil_base64, applicant_passport_base64,
+        has_companion,
+        companion_name, companion_civil_id, companion_passport_no,
+        companion_civil_base64, companion_passport_base64
+      };
+
+      const res = await apiCall({ action:"submit", payload: JSON.stringify(payload) });
+
+      if(!res.ok){
+        throw new Error(res.error || "ERROR");
+      }
+
+      if(res.submitted){
+        showMsg("تم إرسال بياناتك بنجاح ✅", "ok");
+        // اختياري: امسح السيشن بعد الإرسال
+        // sessionStorage.removeItem("umrah_login");
+      } else {
+        // لو رفض بسبب أهلية (server-side)
+        const msg = (res.eligibility && res.eligibility.message) ? res.eligibility.message : "عذرًا، لا يمكن إتمام التسجيل.";
+        showMsg(msg, "err");
+      }
+
+    }catch(e){
+      showMsg("حصل خطأ أثناء الإرسال. حاول مرة أخرى.", "err");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "إرسال البيانات";
+    }
+  }
+
+  loadLogin();
+</script>
+</body>
+</html>
