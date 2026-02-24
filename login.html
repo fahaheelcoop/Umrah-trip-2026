@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>تسجيل رحلة العمرة 2026 - دخول</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;background:#f6f7fb;margin:0;padding:28px}
+    .card{max-width:520px;margin:auto;background:#fff;padding:22px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    h2{margin:0 0 14px;text-align:center}
+    label{display:block;margin:12px 0 6px;font-weight:700}
+    input{width:100%;padding:11px;border-radius:10px;border:1px solid #d8d8d8}
+    button{width:100%;margin-top:16px;padding:13px 16px;background:#2e7d32;color:#fff;border:0;border-radius:12px;cursor:pointer;font-size:16px}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .msg{margin-top:14px;padding:12px;border-radius:12px;background:#f1f5ff;color:#123}
+    .err{background:#fff3f3;color:#900}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>دخول تسجيل رحلة العمرة 2026</h2>
+
+    <label>الرقم المدني</label>
+    <input id="civil" inputmode="numeric" placeholder="مثال: 123456789012"/>
+
+    <label>رقم الصندوق</label>
+    <input id="box" inputmode="numeric" placeholder="مثال: 12345"/>
+
+    <button id="btn" onclick="check()">دخول</button>
+    <div id="out" class="msg" style="display:none"></div>
+  </div>
+
+<script>
+  // ضع رابط الـ Web App هنا بعد Deploy
+  const API_URL = "PUT_YOUR_WEBAPP_URL_HERE";
+
+  function apiCall(params){
+    return new Promise((resolve, reject)=>{
+      const cbName = "__cb_" + Date.now() + "_" + Math.floor(Math.random()*100000);
+      params.callback = cbName;
+
+      const qs = new URLSearchParams(params).toString();
+      const s = document.createElement("script");
+      let done = false;
+
+      window[cbName] = (data)=>{
+        done = true;
+        cleanup();
+        resolve(data);
+      };
+
+      const t = setTimeout(()=>{
+        if(!done){
+          cleanup();
+          reject(new Error("TIMEOUT"));
+        }
+      }, 20000);
+
+      function cleanup(){
+        clearTimeout(t);
+        try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; }
+        if(s && s.parentNode) s.parentNode.removeChild(s);
+      }
+
+      s.src = API_URL + "?" + qs;
+      s.onerror = ()=>{ cleanup(); reject(new Error("NETWORK_ERROR")); };
+      document.body.appendChild(s);
+    });
+  }
+
+  async function check(){
+    const civil = document.getElementById("civil").value.trim();
+    const box = document.getElementById("box").value.trim();
+    const btn = document.getElementById("btn");
+    const out = document.getElementById("out");
+
+    out.style.display="none";
+    out.className="msg";
+
+    if(!civil || !box){
+      out.style.display="block";
+      out.className="msg err";
+      out.textContent="من فضلك اكتب الرقم المدني ورقم الصندوق.";
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "جاري التحقق...";
+
+    try{
+      const res = await apiCall({ action:"check", civil_id:civil, box_number:box });
+
+      if(!res.ok){
+        throw new Error(res.error || "ERROR");
+      }
+
+      if(res.eligible){
+        // خزّن بيانات الدخول مؤقتًا
+        sessionStorage.setItem("umrah_login", JSON.stringify(res.applicant || {civil_id:civil, box_number:box}));
+        // روح للفورم
+        location.href = "form.html";
+      }else{
+        out.style.display="block";
+        out.className="msg err";
+        out.textContent = res.message || "عذرًا، غير مؤهل للتقديم.";
+      }
+    }catch(e){
+      out.style.display="block";
+      out.className="msg err";
+      out.textContent = "حصل خطأ أثناء الاتصال. حاول مرة أخرى.";
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "دخول";
+    }
+  }
+</script>
+</body>
+</html>
