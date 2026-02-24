@@ -146,9 +146,14 @@
   }
 
   function toggleCompanion(){
-  const v = document.getElementById("has_companion").value; // no | spouse | mahram
+  const v = document.getElementById("has_companion").value;
   const box = document.getElementById("companionBox");
   box.style.display = (v !== "no") ? "block" : "none";
+
+  const nameInput = document.getElementById("c_name");
+  if (nameInput) {
+    nameInput.placeholder = (v === "mahram") ? "اسم المحرم" : "اسم الزوج/الزوجة";
+  }
 }
 
   function showMsg(text, type){
