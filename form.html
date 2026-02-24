@@ -78,11 +78,11 @@
 
     <div class="sep"></div>
 
-    <label>هل يوجد مرافق (زوج/زوجة/محرم)؟</label>
     <select id="has_companion" onchange="toggleCompanion()">
-      <option value="no">لا</option>
-      <option value="yes">نعم</option>
-    </select>
+  <option value="no">لا</option>
+  <option value="spouse">زوج/زوجة</option>
+  <option value="mahram">محرم</option>
+</select>
 
     <div id="companionBox" style="display:none;margin-top:10px">
       <div class="grid">
@@ -234,7 +234,8 @@
       const applicant_civil_base64 = await fileToCompressedJpegBase64(fCivil, IMG_MAX, JPG_QUALITY);
       const applicant_passport_base64 = await fileToCompressedJpegBase64(fPass, IMG_MAX, JPG_QUALITY);
 
-      const has_companion = document.getElementById("has_companion").value === "yes";
+      const companionType = document.getElementById("has_companion").value; // no | spouse | mahram
+const has_companion = companionType !== "no";
 
       let companion_name="", companion_civil_id="", companion_passport_no="";
       let companion_civil_base64="", companion_passport_base64="";
@@ -257,13 +258,14 @@
       }
 
       const payload = {
-        civil_id, box_number,
-        applicant_name, mobile, email, address, passport_no,
-        applicant_civil_base64, applicant_passport_base64,
-        has_companion,
-        companion_name, companion_civil_id, companion_passport_no,
-        companion_civil_base64, companion_passport_base64
-      };
+  civil_id, box_number,
+  applicant_name, mobile, email, address, passport_no,
+  applicant_civil_base64, applicant_passport_base64,
+  has_companion,
+  companion_type: companionType, // ✅ جديد
+  companion_name, companion_civil_id, companion_passport_no,
+  companion_civil_base64, companion_passport_base64
+};
 
       const res = await apiCall({ action:"submit", payload: JSON.stringify(payload) });
 
