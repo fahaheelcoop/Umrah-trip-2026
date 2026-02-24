@@ -48,16 +48,7 @@
         <label>رقم الموبايل</label>
         <input id="mobile" inputmode="tel" placeholder="مثال: 5xxxxxxx"/>
       </div>
-      <div>
-        <label>البريد الإلكتروني</label>
-        <input id="email" inputmode="email" placeholder="example@email.com"/>
-      </div>
-
-      <div class="full">
-        <label>العنوان</label>
-        <input id="address" placeholder="المنطقة / الشارع / ..."/>
-      </div>
-
+    
       <div class="full">
         <label>رقم جواز السفر</label>
         <input id="passport_no" placeholder="Passport No."/>
@@ -219,8 +210,6 @@
 
       const applicant_name = document.getElementById("name").value.trim();
       const mobile = document.getElementById("mobile").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const address = document.getElementById("address").value.trim();
       const passport_no = document.getElementById("passport_no").value.trim();
 
       // Required applicant files
@@ -259,7 +248,7 @@ const has_companion = companionType !== "no";
 
       const payload = {
   civil_id, box_number,
-  applicant_name, mobile, email, address, passport_no,
+  applicant_name, mobile, passport_no,
   applicant_civil_base64, applicant_passport_base64,
   has_companion,
   companion_type: companionType, // ✅ جديد
