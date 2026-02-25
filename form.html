@@ -159,12 +159,16 @@ async function apiPost(obj, timeoutMs = 60000){
   const JPG_QUALITY = 0.72;
 
   function showMsg(txt, type){
-    const el = document.getElementById("out"); // ✅ صح
-    if(!el) return;
-    el.style.display = "block";
-    el.className = "msg " + (type === "err" ? "err" : "ok");
-    el.textContent = txt;
-  }
+  const el = document.getElementById("out");
+  if(!el) return;
+
+  el.style.display = "block";
+  el.className = "msg " + (type === "err" ? "err" : "ok");
+  el.textContent = txt;
+
+  // ✅ خليها تظهر حتى لو المستخدم تحت
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+}
 
   function getParam(name){
     return new URLSearchParams(window.location.search).get(name) || "";
@@ -288,7 +292,7 @@ async function apiPost(obj, timeoutMs = 60000){
       }
 
       const res = await apiPost({ action:"submit", payload });
-
+      
       if(res && res.ok && res.submitted === false && res.eligibility){
         showMsg(res.eligibility.message || "غير مؤهل.", "err");
         return;
