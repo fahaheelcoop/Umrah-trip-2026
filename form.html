@@ -112,38 +112,171 @@ button:disabled{opacity:.6;cursor:not-allowed}
 </div>
 
 <script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbwCZv09zM2yklxDhjRUf3gU3KdQpXz7zazUfFpaEftr6oLRo_Ur2g6KattcXjJY3VvZOg/exec";
 
-function showMsg(txt,type){
-const el=document.getElementById("out");
-el.style.display="block";
-el.className="msg "+(type==="err"?"err":"ok");
-el.textContent=txt;
-}
+  async function apiPost(obj){
+    const r = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(obj),
+    });
+    return await r.json();
+  }
 
-function getParam(n){
-return new URLSearchParams(location.search).get(n)||"";
-}
+  const IMG_MAX = 1600;
+  const JPG_QUALITY = 0.72;
 
-function fillIds_(){
-civil.value=getParam("civil_id")||sessionStorage.getItem("civil_id")||"";
-box.value=getParam("box_number")||sessionStorage.getItem("box_number")||"";
-}
+  function showMsg(txt, type){
+    const el = document.getElementById("out"); // ✅ صح
+    if(!el) return;
+    el.style.display = "block";
+    el.className = "msg " + (type === "err" ? "err" : "ok");
+    el.textContent = txt;
+  }
 
-/* ====== FIXED TOGGLE ====== */
-function toggleCompanion(){
-const val=document.getElementById("has_companion").value;
-const box=document.getElementById("companionBox");
-box.style.display=(val==="spouse"||val==="mahram")?"block":"none";
-}
+  function getParam(name){
+    return new URLSearchParams(window.location.search).get(name) || "";
+  }
 
-/* ربط مضمون */
-document.addEventListener("DOMContentLoaded",()=>{
-fillIds_();
-const sel=document.getElementById("has_companion");
-sel.addEventListener("change",toggleCompanion);
-toggleCompanion();
-});
+  function fillIds_(){
+    const civil = (getParam("civil_id") || sessionStorage.getItem("civil_id") || "").trim();
+    const box   = (getParam("box_number") || sessionStorage.getItem("box_number") || "").trim();
 
+    const civilEl = document.getElementById("civil");
+    const boxEl   = document.getElementById("box");
+    if(civilEl) civilEl.value = civil;
+    if(boxEl)   boxEl.value = box;
+  }
+
+  function toggleCompanion(){
+    const sel = document.getElementById("has_companion");
+    const box = document.getElementById("companionBox");
+    if(!sel || !box) return;
+
+    const val = (sel.value || "").trim();
+    box.style.display = (val === "spouse" || val === "mahram") ? "block" : "none";
+  }
+
+  // ✅ ربط مضمون + تشغيل مرة أول ما الصفحة تفتح
+  document.addEventListener("DOMContentLoaded", ()=>{
+    fillIds_();
+
+    const sel = document.getElementById("has_companion");
+    if(sel){
+      sel.addEventListener("change", toggleCompanion);
+      toggleCompanion();
+    }
+  });
+
+  window.addEventListener("pageshow", fillIds_);
+
+  // ========= ضغط الصور =========
+  function fileToCompressedJpegBase64(file, maxDim, quality){
+    return new Promise((resolve, reject)=>{
+      if(!file) return resolve("");
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const w = img.width, h = img.height;
+          const scale = Math.min(1, maxDim / Math.max(w, h));
+          const nw = Math.round(w * scale);
+          const nh = Math.round(h * scale);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = nw;
+          canvas.height = nh;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, nw, nh);
+
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(dataUrl);
+        };
+        img.onerror = ()=>reject(new Error("BAD_IMAGE"));
+        img.src = reader.result;
+      };
+      reader.onerror = ()=>reject(new Error("READ_ERROR"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function submitForm(){
+    const btn = document.getElementById("btn");
+    btn.disabled = true;
+    btn.textContent = "جاري الإرسال...";
+
+    try{
+      const civil_id = (document.getElementById("civil")?.value || "").trim();
+      const box_number = (document.getElementById("box")?.value || "").trim();
+      const applicant_name = (document.getElementById("name")?.value || "").trim();
+      const mobile = (document.getElementById("mobile")?.value || "").trim();
+      const passport_no = (document.getElementById("passport_no")?.value || "").trim();
+
+      const fCivil = document.getElementById("app_civil_file")?.files?.[0];
+      const fPass  = document.getElementById("app_passport_file")?.files?.[0];
+
+      if(!fCivil || !fPass){
+        showMsg("من فضلك ارفع صورة البطاقة المدنية وصورة جواز السفر.", "err");
+        return;
+      }
+
+      const civilImg = await fileToCompressedJpegBase64(fCivil, IMG_MAX, JPG_QUALITY);
+      const passImg  = await fileToCompressedJpegBase64(fPass, IMG_MAX, JPG_QUALITY);
+
+      const compVal = document.getElementById("has_companion")?.value || "no";
+      const hasCompanion = compVal !== "no";
+
+      const payload = {
+        civil_id,
+        box_number,
+        applicant_name,
+        mobile,
+        passport_no,
+        applicant_civil_base64: civilImg,
+        applicant_passport_base64: passImg,
+
+        has_companion: hasCompanion,
+        companion_type: compVal,
+        companion_name: (document.getElementById("c_name")?.value || "").trim(),
+        companion_civil_id: (document.getElementById("c_civil")?.value || "").trim(),
+        companion_passport_no: (document.getElementById("c_passport_no")?.value || "").trim()
+      };
+
+      if(hasCompanion){
+        const cCivilFile = document.getElementById("c_civil_file")?.files?.[0];
+        const cPassFile  = document.getElementById("c_passport_file")?.files?.[0];
+
+        if(!cCivilFile || !cPassFile){
+          showMsg("من فضلك ارفع صور المرافق (هويتي + جواز السفر).", "err");
+          return;
+        }
+
+        payload.companion_civil_base64 = await fileToCompressedJpegBase64(cCivilFile, IMG_MAX, JPG_QUALITY);
+        payload.companion_passport_base64 = await fileToCompressedJpegBase64(cPassFile, IMG_MAX, JPG_QUALITY);
+      }
+
+      const res = await apiPost({ action:"submit", payload });
+
+      if(res && res.ok && res.submitted === false && res.eligibility){
+        showMsg(res.eligibility.message || "غير مؤهل.", "err");
+        return;
+      }
+
+      if(res && res.ok && res.submitted === true){
+        showMsg("تم إرسال البيانات بنجاح.", "ok");
+        return;
+      }
+
+      showMsg(res?.error || res?.message || "حصل خطأ أثناء الإرسال.", "err");
+
+    }catch(e){
+      console.error(e);
+      showMsg("حصل خطأ أثناء الإرسال. حاول مرة أخرى.", "err");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "إرسال البيانات";
+    }
+  }
 </script>
 </body>
 </html>
