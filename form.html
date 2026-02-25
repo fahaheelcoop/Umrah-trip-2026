@@ -69,13 +69,13 @@
 
     <div class="sep"></div>
 
-    <select id="has_companion" onchange="toggleCompanion()">
+    <select id="has_companion" name="has_companion" onchange="toggleCompanion()">
   <option value="no">لا</option>
   <option value="spouse">زوج/زوجة</option>
   <option value="mahram">محرم</option>
 </select>
 
-    <div id="companionBox" style="display:none;margin-top:10px">
+    <div id="companionBox" style="display:none; margin-top:10px;">
       <div class="grid">
         <div class="full">
           <label>اسم المرافق</label>
@@ -308,6 +308,24 @@ async function apiPost(obj){
 
   box.style.display = "block";
 }
+
+function toggleCompanion(){
+  const sel = document.getElementById("has_companion");
+  const box = document.getElementById("companionBox");
+  if(!sel || !box) return;
+
+  const val = (sel.value || "").trim();
+  box.style.display = (val === "spouse" || val === "mahram") ? "block" : "none";
+}
+
+// ✅ ربط مضمون حتى لو onchange مش شغال لأي سبب
+document.addEventListener("DOMContentLoaded", () => {
+  const sel = document.getElementById("has_companion");
+  if(sel){
+    sel.addEventListener("change", toggleCompanion);
+    toggleCompanion();
+  }
+});
   
 </script>
 </body>
