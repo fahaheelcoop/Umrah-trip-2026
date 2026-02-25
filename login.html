@@ -99,7 +99,13 @@
         // خزّن بيانات الدخول مؤقتًا
         sessionStorage.setItem("umrah_login", JSON.stringify(res.applicant || {civil_id:civil, box_number:box}));
         // روح للفورم
-        location.href = "form.html";
+        sessionStorage.setItem("civil_id", civil_id);
+sessionStorage.setItem("box_number", box_number);
+
+location.href = "form.html?civil_id=" 
+  + encodeURIComponent(civil_id) 
+  + "&box_number=" 
+  + encodeURIComponent(box_number);
       }else{
         out.style.display="block";
         out.className="msg err";
