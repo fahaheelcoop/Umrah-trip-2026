@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>تم استلام الطلب - رحلة العمرة 2026</title>
+
+<style>
+  *{box-sizing:border-box}
+  body{
+    font-family:Arial,sans-serif;
+    background:#f6f7fb;
+    margin:0;
+    padding:28px
+  }
+  .card{
+    max-width:520px;
+    margin:auto;
+    background:#fff;
+    padding:28px;
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+    text-align:center
+  }
+  h2{
+    margin:0 0 18px;
+    color:#2e7d32
+  }
+  .icon{
+    font-size:60px;
+    margin-bottom:12px
+  }
+  .box{
+    background:#f1f5ff;
+    padding:12px;
+    border-radius:10px;
+    margin-top:15px;
+    font-weight:bold
+  }
+  button{
+    width:100%;
+    margin-top:22px;
+    padding:13px 16px;
+    background:#2e7d32;
+    color:#fff;
+    border:0;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:16px
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="icon">✅</div>
+  <h2>تم استلام طلبك بنجاح</h2>
+
+  <p id="msgText"></p>
+
+  <div class="box" id="infoBox"></div>
+
+  <button onclick="goHome()">العودة للصفحة الرئيسية</button>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+
+  const civil = params.get("civil_id");
+  const box = params.get("box_number");
+  const requestId = params.get("request_id");
+  const already = params.get("already");
+
+  const msgText = document.getElementById("msgText");
+  const infoBox = document.getElementById("infoBox");
+
+  if(already === "1"){
+    msgText.textContent = "تم استلام طلبك مسبقًا ولا يمكن إرسال طلب آخر بنفس البيانات.";
+  } else {
+    msgText.textContent = "تم تسجيل بياناتك بنجاح. سيتم مراجعة الطلب والتواصل معك عند الحاجة.";
+  }
+
+  infoBox.innerHTML = `
+    الرقم المدني: ${civil || "-"} <br>
+    رقم الصندوق: ${box || "-"} 
+    ${requestId ? "<br>رقم الطلب: " + requestId : ""}
+  `;
+
+  function goHome(){
+    window.location.href = "index.html"; // لو اسم صفحة الدخول مختلف غيره هنا
+  }
+</script>
+
+</body>
+</html>
