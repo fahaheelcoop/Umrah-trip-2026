@@ -114,6 +114,23 @@
   const IMG_MAX = 1600;     // أقصى بُعد (عرض/ارتفاع)
   const JPG_QUALITY = 0.72; // جودة JPEG
 
+  function getParam(name){
+  return new URLSearchParams(window.location.search).get(name) || "";
+}
+
+window.addEventListener("load", function(){
+  const civil = getParam("civil_id") || sessionStorage.getItem("civil_id") || "";
+  const box   = getParam("box_number") || sessionStorage.getItem("box_number") || "";
+
+  if (!civil || !box){
+    location.href = "login.html";
+    return;
+  }
+
+  document.getElementById("civil").value = civil;
+  document.getElementById("box").value = box;
+});
+  
   function apiCall(params){
     return new Promise((resolve, reject)=>{
       const cbName = "__cb_" + Date.now() + "_" + Math.floor(Math.random()*100000);
