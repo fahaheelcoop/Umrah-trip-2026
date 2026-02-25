@@ -109,7 +109,15 @@
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbwCZv09zM2yklxDhjRUf3gU3KdQpXz7zazUfFpaEftr6oLRo_Ur2g6KattcXjJY3VvZOg/exec";
-
+async function apiPost(obj){
+  const r = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(obj),
+  });
+  // لو الرد JSON طبيعي
+  return await r.json();
+}
   const IMG_MAX = 1600;
   const JPG_QUALITY = 0.72;
 
@@ -258,7 +266,7 @@
         payload.companion_passport_base64 = await fileToCompressedJpegBase64(cPassFile, IMG_MAX, JPG_QUALITY);
       }
 
-      res = await apiCall({ action:"submit", payload: JSON.stringify(payload) });
+      res = await apiPost({ action:"submit", payload: payload });
 
       if(res && res.ok && res.submitted === false && res.eligibility){
         showMsg(res.eligibility.message || "غير مؤهل.", "err");
