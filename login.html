@@ -35,7 +35,7 @@
   // رابط الـ Web App بعد Deploy
   const API_URL = "https://script.google.com/macros/s/AKfycbwCZv09zM2yklxDhjRUf3gU3KdQpXz7zazUfFpaEftr6oLRo_Ur2g6KattcXjJY3VvZOg/exec";
 
-  // ✅ POST ثابت (بديل JSONP)
+  // ✅ POST ثابت
   async function apiPost(obj){
     const r = await fetch(API_URL, {
       method: "POST",
@@ -72,6 +72,20 @@
 
       if(!res || res.ok !== true){
         showMsg((res && (res.message || res.error)) ? (res.message || res.error) : "حصل خطأ أثناء الاتصال.", "err");
+        return;
+      }
+
+      // ✅ NEW: لو مسجل قبل كده → روح لصفحة نجاح (هنعملها بعدين)
+      if(res.code === "ALREADY_REGISTERED" || res.alreadyRegistered === true){
+        sessionStorage.setItem("civil_id", civil);
+        sessionStorage.setItem("box_number", box);
+
+        location.href = "success.html?civil_id="
+          + encodeURIComponent(civil)
+          + "&box_number="
+          + encodeURIComponent(box)
+          + (res.request_id ? "&request_id=" + encodeURIComponent(res.request_id) : "")
+          + "&already=1";
         return;
       }
 
