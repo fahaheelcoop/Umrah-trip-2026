@@ -22,153 +22,160 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .err{background:#fff3f3;color:#900}
 .ok{background:#f3fff3;color:#070}
 .sep{height:1px;background:#eee;margin:16px 0}
+.small-note{font-size:12px;color:#777;margin-top:6px}
 </style>
 </head>
 
 <body>
 <div class="wrap">
-<div class="card">
+  <div class="card">
+    <h2>بيانات تسجيل العمرة 2026</h2>
 
-<h2>بيانات تسجيل العمرة 2026</h2>
-<div id="out" class="msg"></div>
+    <!-- ✅ الرسائل -->
+    <div id="out" class="msg"></div>
 
-<div class="grid">
-<div>
-<label>الرقم المدني</label>
-<input id="civil" disabled/>
-</div>
+    <div class="grid">
+      <div>
+        <label>الرقم المدني</label>
+        <input id="civil" disabled/>
+      </div>
 
-<div>
-<label>رقم الصندوق</label>
-<input id="box" disabled/>
-</div>
+      <div>
+        <label>رقم الصندوق</label>
+        <input id="box" disabled/>
+      </div>
 
-<div class="full">
-<label>الاسم</label>
-<input id="name" placeholder="الاسم الكامل"/>
-</div>
+      <div class="full">
+        <label>الاسم</label>
+        <input id="name" placeholder="الاسم الكامل"/>
+      </div>
 
-<div>
-<label>رقم الموبايل</label>
-<input id="mobile" inputmode="tel" placeholder="مثال: 5xxxxxxx"/>
-</div>
+      <div>
+        <label>رقم الموبايل</label>
+        <input id="mobile" inputmode="tel" placeholder="مثال: 5xxxxxxx"/>
+      </div>
 
-<div class="full">
-<label>رقم جواز السفر</label>
-<input id="passport_no" placeholder="Passport No."/>
-</div>
+      <div class="full">
+        <label>رقم جواز السفر</label>
+        <input id="passport_no" placeholder="Passport No."/>
+      </div>
 
-<div class="full">
-<label>صورة البطاقة المدنية</label>
-<input id="app_civil_file" type="file" accept="image/*"/>
-</div>
+      <div class="full">
+        <label>صورة البطاقة المدنية</label>
+        <input id="app_civil_file" type="file" accept="image/*"/>
+        <div class="small-note">سيتم ضغط الصورة تلقائيًا قبل الإرسال.</div>
+      </div>
 
-<div class="full">
-<label>صورة جواز السفر</label>
-<input id="app_passport_file" type="file" accept="image/*"/>
-</div>
-</div>
+      <div class="full">
+        <label>صورة جواز السفر</label>
+        <input id="app_passport_file" type="file" accept="image/*"/>
+        <div class="small-note">سيتم ضغط الصورة تلقائيًا قبل الإرسال.</div>
+      </div>
+    </div>
 
-<div class="sep"></div>
+    <div class="sep"></div>
 
-<select id="has_companion">
-<option value="no">لا</option>
-<option value="spouse">زوج/زوجة</option>
-<option value="mahram">محرم</option>
-</select>
+    <label style="font-weight:700; display:block; margin:0 0 8px;">هل يوجد مرافق؟</label>
+    <select id="has_companion">
+      <option value="no">لا</option>
+      <option value="spouse">زوج/زوجة</option>
+      <option value="mahram">محرم</option>
+    </select>
 
-<div id="companionBox" style="display:none; margin-top:15px;">
-<div class="grid">
-<div class="full">
-<label>اسم المرافق</label>
-<input id="c_name"/>
-</div>
+    <div id="companionBox" style="display:none; margin-top:15px;">
+      <div class="grid">
+        <div class="full">
+          <label>اسم المرافق</label>
+          <input id="c_name" placeholder="اسم المرافق"/>
+        </div>
 
-<div>
-<label>الرقم المدني للمرافق</label>
-<input id="c_civil" inputmode="numeric"/>
-</div>
+        <div>
+          <label>الرقم المدني للمرافق</label>
+          <input id="c_civil" inputmode="numeric"/>
+        </div>
 
-<div>
-<label>رقم جواز المرافق</label>
-<input id="c_passport_no"/>
-</div>
+        <div>
+          <label>رقم جواز المرافق</label>
+          <input id="c_passport_no"/>
+        </div>
 
-<div class="full">
-<label>صورة البطاقة المدنية للمرافق</label>
-<input id="c_civil_file" type="file" accept="image/*"/>
-</div>
+        <div class="full">
+          <label>صورة البطاقة المدنية للمرافق</label>
+          <input id="c_civil_file" type="file" accept="image/*"/>
+          <div class="small-note">سيتم ضغط الصورة تلقائيًا قبل الإرسال.</div>
+        </div>
 
-<div class="full">
-<label>صورة جواز المرافق</label>
-<input id="c_passport_file" type="file" accept="image/*"/>
-</div>
-</div>
-</div>
+        <div class="full">
+          <label>صورة جواز المرافق</label>
+          <input id="c_passport_file" type="file" accept="image/*"/>
+          <div class="small-note">سيتم ضغط الصورة تلقائيًا قبل الإرسال.</div>
+        </div>
+      </div>
+    </div>
 
-<button id="btn" type="button" onclick="submitForm()">إرسال البيانات</button>
-
-</div>
+    <button id="btn" type="button" onclick="submitForm()">إرسال البيانات</button>
+    <div class="note">بالضغط على إرسال، سيتم رفع الصور إلى Google Drive وتسجيل البيانات في Google Sheets.</div>
+  </div>
 </div>
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbwCZv09zM2yklxDhjRUf3gU3KdQpXz7zazUfFpaEftr6oLRo_Ur2g6KattcXjJY3VvZOg/exec";
 
-  // 🔥 الدالة الجديدة مكان القديمة
-async function apiPost(obj, timeoutMs = 60000){
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  // ✅ POST ثابت + Timeout + معالجة JSON
+  async function apiPost(obj, timeoutMs = 90000){
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
 
-  try{
-    const r = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type":"text/plain;charset=utf-8" },
-      body: JSON.stringify(obj),
-      signal: ctrl.signal
-    });
+    try{
+      const r = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type":"text/plain;charset=utf-8" },
+        body: JSON.stringify(obj),
+        signal: ctrl.signal
+      });
 
-    const text = await r.text();
+      const text = await r.text();
 
-    let data = null;
-    try { data = JSON.parse(text); }
-    catch(e){
-      data = { ok:false, error:"BAD_JSON", message:text.slice(0,250) };
+      let data = null;
+      try { data = JSON.parse(text); }
+      catch(e){
+        data = { ok:false, error:"BAD_JSON", message:text.slice(0,250) };
+      }
+
+      if(!r.ok){
+        return {
+          ok:false,
+          error:"HTTP_"+r.status,
+          message:data.message || ("HTTP "+r.status)
+        };
+      }
+
+      return data;
+
+    }catch(e){
+      if(e.name === "AbortError"){
+        return { ok:false, error:"TIMEOUT", message:"الاتصال اتأخر. حاول مرة أخرى." };
+      }
+      return { ok:false, error:"NETWORK_ERROR", message:"مشكلة اتصال. حاول تاني." };
+    }finally{
+      clearTimeout(timer);
     }
-
-    if(!r.ok){
-      return {
-        ok:false,
-        error:"HTTP_"+r.status,
-        message:data.message || ("HTTP "+r.status)
-      };
-    }
-
-    return data;
-
-  }catch(e){
-    if(e.name === "AbortError"){
-      return { ok:false, error:"TIMEOUT", message:"الاتصال اتأخر. حاول مرة أخرى." };
-    }
-    return { ok:false, error:"NETWORK_ERROR", message:"مشكلة اتصال. حاول تاني." };
-  }finally{
-    clearTimeout(timer);
   }
-}
 
   const IMG_MAX = 1600;
   const JPG_QUALITY = 0.72;
 
   function showMsg(txt, type){
-  const el = document.getElementById("out");
-  if(!el) return;
+    const el = document.getElementById("out");
+    if(!el) return;
 
-  el.style.display = "block";
-  el.className = "msg " + (type === "err" ? "err" : "ok");
-  el.textContent = txt;
+    el.style.display = "block";
+    el.className = "msg " + (type === "err" ? "err" : "ok");
+    el.textContent = txt;
 
-  // ✅ خليها تظهر حتى لو المستخدم تحت
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-}
+    // ✅ خلّي الرسالة تظهر حتى لو المستخدم تحت
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   function getParam(name){
     return new URLSearchParams(window.location.search).get(name) || "";
@@ -193,7 +200,6 @@ async function apiPost(obj, timeoutMs = 60000){
     box.style.display = (val === "spouse" || val === "mahram") ? "block" : "none";
   }
 
-  // ✅ ربط مضمون + تشغيل مرة أول ما الصفحة تفتح
   document.addEventListener("DOMContentLoaded", ()=>{
     fillIds_();
 
@@ -238,12 +244,25 @@ async function apiPost(obj, timeoutMs = 60000){
 
   async function submitForm(){
     const btn = document.getElementById("btn");
+    if(btn.disabled) return; // ✅ منع الضغط مرتين بسرعة
     btn.disabled = true;
     btn.textContent = "جاري الإرسال...";
 
+    let res = null; // ✅ مهم جدًا
+
     try{
+      // ✅ اخفاء الرسالة القديمة
+      const out = document.getElementById("out");
+      if(out) out.style.display = "none";
+
       const civil_id = (document.getElementById("civil")?.value || "").trim();
       const box_number = (document.getElementById("box")?.value || "").trim();
+
+      if(!civil_id || !box_number){
+        showMsg("بيانات الدخول غير مكتملة. ارجع لصفحة الدخول وحاول مرة أخرى.", "err");
+        return;
+      }
+
       const applicant_name = (document.getElementById("name")?.value || "").trim();
       const mobile = (document.getElementById("mobile")?.value || "").trim();
       const passport_no = (document.getElementById("passport_no")?.value || "").trim();
@@ -283,7 +302,7 @@ async function apiPost(obj, timeoutMs = 60000){
         const cPassFile  = document.getElementById("c_passport_file")?.files?.[0];
 
         if(!cCivilFile || !cPassFile){
-          showMsg("من فضلك ارفع صور المرافق (هويتي + جواز السفر).", "err");
+          showMsg("من فضلك ارفع صور المرافق (البطاقة المدنية + جواز السفر).", "err");
           return;
         }
 
@@ -291,33 +310,45 @@ async function apiPost(obj, timeoutMs = 60000){
         payload.companion_passport_base64 = await fileToCompressedJpegBase64(cPassFile, IMG_MAX, JPG_QUALITY);
       }
 
-      const res = await apiPost({ action:"submit", payload });
-      
+      res = await apiPost({ action:"submit", payload });
+
+      // ✅ لو مسجل مسبقًا -> تحويل لصفحة النجاح (already=1)
+      if(res && res.ok && res.submitted === false && res.eligibility && (
+        res.eligibility.code === "ALREADY_REGISTERED" || res.eligibility.alreadyRegistered === true
+      )){
+        location.href = "success.html?civil_id="
+          + encodeURIComponent(civil_id)
+          + "&box_number="
+          + encodeURIComponent(box_number)
+          + "&already=1";
+        return;
+      }
+
+      // ✅ أي رفض أهلية آخر
       if(res && res.ok && res.submitted === false && res.eligibility){
         showMsg(res.eligibility.message || "غير مؤهل.", "err");
         return;
       }
 
+      // ✅ نجاح
       if(res && res.ok && res.submitted === true){
-  // ✅ خزّن آخر طلب (اختياري)
-  sessionStorage.setItem("last_submit", JSON.stringify({
-    civil_id,
-    box_number,
-    request_id: res.request_id || "",
-    already: 0
-  }));
+        // اختياري: خزّن آخر طلب
+        sessionStorage.setItem("last_submit", JSON.stringify({
+          civil_id,
+          box_number,
+          request_id: res.request_id || "",
+          already: 0
+        }));
 
-  // ✅ روح لصفحة النجاح
-  location.href = "success.html?civil_id="
-    + encodeURIComponent(civil_id)
-    + "&box_number="
-    + encodeURIComponent(box_number)
-    + (res.request_id ? "&request_id=" + encodeURIComponent(res.request_id) : "");
+        location.href = "success.html?civil_id="
+          + encodeURIComponent(civil_id)
+          + "&box_number="
+          + encodeURIComponent(box_number)
+          + (res.request_id ? "&request_id=" + encodeURIComponent(res.request_id) : "");
+        return;
+      }
 
-  return;
-}
-
-      showMsg(res?.error || res?.message || "حصل خطأ أثناء الإرسال.", "err");
+      showMsg(res?.message || res?.error || "حصل خطأ أثناء الإرسال.", "err");
 
     }catch(e){
       console.error(e);
