@@ -295,9 +295,23 @@ async function apiPost(obj, timeoutMs = 60000){
       }
 
       if(res && res.ok && res.submitted === true){
-        showMsg("تم إرسال البيانات بنجاح.", "ok");
-        return;
-      }
+  // ✅ خزّن آخر طلب (اختياري)
+  sessionStorage.setItem("last_submit", JSON.stringify({
+    civil_id,
+    box_number,
+    request_id: res.request_id || "",
+    already: 0
+  }));
+
+  // ✅ روح لصفحة النجاح
+  location.href = "success.html?civil_id="
+    + encodeURIComponent(civil_id)
+    + "&box_number="
+    + encodeURIComponent(box_number)
+    + (res.request_id ? "&request_id=" + encodeURIComponent(res.request_id) : "");
+
+  return;
+}
 
       showMsg(res?.error || res?.message || "حصل خطأ أثناء الإرسال.", "err");
 
