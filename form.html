@@ -185,7 +185,27 @@ button:disabled{opacity:.6;cursor:not-allowed}
     // ✅ خلّي الرسالة تظهر حتى لو المستخدم تحت
     el.scrollIntoView({ behavior: "smooth", block: "center" });
   }
+async function checkCompanionNow(){
+  const cCivil = (document.getElementById("c_civil")?.value || "").trim();
+  const compVal = document.getElementById("has_companion")?.value || "no";
+  const hasComp = compVal !== "no";
+  if(!hasComp || !cCivil) return;
 
+  const r = await apiPost({ action:"check_companion", civil_id: cCivil });
+  if(r && r.ok && r.eligible === false){
+    showMsg(r.message || "المرافق غير مسموح.", "err");
+    // document.getElementById("c_civil").value = ""; // اختياري
+  }
+}
+
+// شغلها بمجرد ما يكتب الرقم أو يسيب الحقل
+document.addEventListener("DOMContentLoaded", ()=>{
+  const c = document.getElementById("c_civil");
+  if(c){
+    c.addEventListener("blur", checkCompanionNow);
+    c.addEventListener("change", checkCompanionNow);
+  }
+});
   function getParam(name){
     return new URLSearchParams(window.location.search).get(name) || "";
   }
