@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>تم استلام الطلب - رحلة العمرة 2026</title>
+<title>نتيجة الطلب - رحلة العمرة 2026</title>
 
 <style>
   *{box-sizing:border-box}
@@ -24,8 +24,10 @@
   }
   h2{
     margin:0 0 18px;
-    color:#2e7d32
   }
+  .success-title{ color:#2e7d32 }
+  .already-title{ color:#c62828 }
+
   .icon{
     font-size:60px;
     margin-bottom:12px
@@ -53,8 +55,8 @@
 <body>
 
 <div class="card">
-  <div class="icon">✅</div>
-  <h2>تم استلام طلبك بنجاح</h2>
+  <div class="icon" id="icon">✅</div>
+  <h2 id="title"></h2>
 
   <p id="msgText"></p>
 
@@ -71,12 +73,20 @@
   const requestId = params.get("request_id");
   const already = params.get("already");
 
+  const title = document.getElementById("title");
   const msgText = document.getElementById("msgText");
   const infoBox = document.getElementById("infoBox");
+  const icon = document.getElementById("icon");
 
   if(already === "1"){
-    msgText.textContent = "تم استلام طلبك مسبقًا ولا يمكن إرسال طلب آخر بنفس البيانات.";
+    title.textContent = "تم استلام طلبك مسبقًا";
+    title.className = "already-title";
+    icon.textContent = "ℹ️";
+    msgText.textContent = "تم استلام طلبك سابقًا ولا يمكن إرسال طلب آخر بنفس البيانات.";
   } else {
+    title.textContent = "تم استلام طلبك بنجاح";
+    title.className = "success-title";
+    icon.textContent = "✅";
     msgText.textContent = "تم تسجيل بياناتك بنجاح. سيتم مراجعة الطلب والتواصل معك عند الحاجة.";
   }
 
@@ -87,7 +97,8 @@
   `;
 
   function goHome(){
-    window.location.href = "index.html"; // لو اسم صفحة الدخول مختلف غيره هنا
+    window.location.href = "index.html"; 
+    // لو اسم صفحة الدخول مختلف غيره هنا
   }
 </script>
 
