@@ -114,6 +114,33 @@
   const IMG_MAX = 1600;     // أقصى بُعد (عرض/ارتفاع)
   const JPG_QUALITY = 0.72; // جودة JPEG
 
+  // ✅ قراءة باراميترز الرابط + تعبئة الحقول
+(function(){
+  function getParam(name){
+    try { return new URLSearchParams(window.location.search).get(name) || ""; }
+    catch(e){ return ""; }
+  }
+
+  function fill(){
+    const civil = (getParam("civil_id") || sessionStorage.getItem("civil_id") || "").trim();
+    const box   = (getParam("box_number") || sessionStorage.getItem("box_number") || "").trim();
+
+    const civilEl = document.getElementById("civil");
+    const boxEl   = document.getElementById("box");
+
+    // debug
+    console.log("fill()", { search: window.location.search, civil, box, civilEl: !!civilEl, boxEl: !!boxEl });
+
+    if (civilEl && civil) civilEl.value = civil;
+    if (boxEl && box) boxEl.value = box;
+  }
+
+  document.addEventListener("DOMContentLoaded", fill);
+  window.addEventListener("pageshow", fill);
+  setTimeout(fill, 50);
+  setTimeout(fill, 500);
+})();
+
   function getParam(name){
   return new URLSearchParams(window.location.search).get(name) || "";
 }
@@ -131,6 +158,7 @@ window.addEventListener("load", function(){
   document.getElementById("box").value = box;
 });
 
+  
   function getParam(name){
   return new URLSearchParams(window.location.search).get(name) || "";
 }
