@@ -13,7 +13,7 @@
     input{width:100%;padding:11px;border-radius:10px;border:1px solid #d8d8d8}
     button{width:100%;margin-top:16px;padding:13px 16px;background:#2e7d32;color:#fff;border:0;border-radius:12px;cursor:pointer;font-size:16px}
     button:disabled{opacity:.6;cursor:not-allowed}
-    .msg{margin-top:14px;padding:12px;border-radius:12px;background:#f1f5ff;color:#123}
+    .msg{margin-top:14px;padding:12px;border-radius:12px;background:#f1f5ff;color:#123;display:none}
     .err{background:#fff3f3;color:#900}
   </style>
 </head>
@@ -28,60 +28,39 @@
     <input id="box" inputmode="numeric" placeholder="مثال: 12345"/>
 
     <button id="btn" onclick="check()">دخول</button>
-    <div id="out" class="msg" style="display:none"></div>
+    <div id="out" class="msg"></div>
   </div>
 
 <script>
-  // ضع رابط الـ Web App هنا بعد Deploy
+  // رابط الـ Web App بعد Deploy
   const API_URL = "https://script.google.com/macros/s/AKfycbwCZv09zM2yklxDhjRUf3gU3KdQpXz7zazUfFpaEftr6oLRo_Ur2g6KattcXjJY3VvZOg/exec";
 
-  function apiCall(params){
-    return new Promise((resolve, reject)=>{
-      const cbName = "__cb_" + Date.now() + "_" + Math.floor(Math.random()*100000);
-      params.callback = cbName;
-
-      const qs = new URLSearchParams(params).toString();
-      const s = document.createElement("script");
-      let done = false;
-
-      window[cbName] = (data)=>{
-        done = true;
-        cleanup();
-        resolve(data);
-      };
-
-      const t = setTimeout(()=>{
-        if(!done){
-          cleanup();
-          reject(new Error("TIMEOUT"));
-        }
-      }, 20000);
-
-      function cleanup(){
-        clearTimeout(t);
-        try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; }
-        if(s && s.parentNode) s.parentNode.removeChild(s);
-      }
-
-      s.src = API_URL + "?" + qs;
-      s.onerror = ()=>{ cleanup(); reject(new Error("NETWORK_ERROR")); };
-      document.body.appendChild(s);
+  // ✅ POST ثابت (بديل JSONP)
+  async function apiPost(obj){
+    const r = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(obj)
     });
+    return await r.json();
+  }
+
+  function showMsg(text, type){
+    const out = document.getElementById("out");
+    out.className = "msg" + (type === "err" ? " err" : "");
+    out.textContent = text;
+    out.style.display = "block";
   }
 
   async function check(){
     const civil = document.getElementById("civil").value.trim();
     const box = document.getElementById("box").value.trim();
     const btn = document.getElementById("btn");
-    const out = document.getElementById("out");
 
-    out.style.display="none";
-    out.className="msg";
+    document.getElementById("out").style.display = "none";
 
     if(!civil || !box){
-      out.style.display="block";
-      out.className="msg err";
-      out.textContent="من فضلك اكتب الرقم المدني ورقم الصندوق.";
+      showMsg("من فضلك اكتب الرقم المدني ورقم الصندوق.", "err");
       return;
     }
 
@@ -89,32 +68,31 @@
     btn.textContent = "جاري التحقق...";
 
     try{
-      const res = await apiCall({ action:"check", civil_id:civil, box_number:box });
+      const res = await apiPost({ action:"check", civil_id:civil, box_number:box });
 
-      if(!res.ok){
-        throw new Error(res.error || "ERROR");
+      if(!res || res.ok !== true){
+        showMsg((res && (res.message || res.error)) ? (res.message || res.error) : "حصل خطأ أثناء الاتصال.", "err");
+        return;
       }
 
       if(res.eligible){
-        // خزّن بيانات الدخول مؤقتًا
-        sessionStorage.setItem("umrah_login", JSON.stringify(res.applicant || {civil_id:civil, box_number:box}));
-        // روح للفورم
-        sessionStorage.setItem("civil_id", civil_id);
-sessionStorage.setItem("box_number", box_number);
+        // ✅ خزّن بيانات الدخول
+        sessionStorage.setItem("umrah_login", JSON.stringify(res.applicant || { civil_id:civil, box_number:box }));
+        sessionStorage.setItem("civil_id", civil);
+        sessionStorage.setItem("box_number", box);
 
-location.href = "form.html?civil_id=" 
-  + encodeURIComponent(civil_id) 
-  + "&box_number=" 
-  + encodeURIComponent(box_number);
+        // ✅ تحويل للفورم مع الباراميترز
+        location.href = "form.html?civil_id="
+          + encodeURIComponent(civil)
+          + "&box_number="
+          + encodeURIComponent(box);
+
       }else{
-        out.style.display="block";
-        out.className="msg err";
-        out.textContent = res.message || "عذرًا، غير مؤهل للتقديم.";
+        showMsg(res.message || "عذرًا، غير مؤهل للتقديم.", "err");
       }
+
     }catch(e){
-      out.style.display="block";
-      out.className="msg err";
-      out.textContent = "حصل خطأ أثناء الاتصال. حاول مرة أخرى.";
+      showMsg("حصل خطأ أثناء الاتصال. حاول مرة أخرى.", "err");
     }finally{
       btn.disabled = false;
       btn.textContent = "دخول";
