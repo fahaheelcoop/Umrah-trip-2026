@@ -296,6 +296,19 @@ async function apiPost(obj){
   });
 
   window.addEventListener("pageshow", fillIds_);
+
+  function toggleCompanion(){
+  const val = document.getElementById("has_companion").value;
+  const box = document.getElementById("companionBox");
+
+  if(val === "no"){
+    box.style.display = "none";
+    return;
+  }
+
+  box.style.display = "block";
+}
+  
 </script>
 </body>
 </html>
