@@ -317,7 +317,16 @@ async function apiPost(obj){
 }finally{
   btn.disabled = false;
   btn.textContent = "إرسال البيانات";
-}
+} // ✅ دي كانت ناقصة: قفلة دالة submitForm
+
+// ✅ شغّل التهيئة بعد تحميل الصفحة
+document.addEventListener("DOMContentLoaded", () => {
+  loadLogin();
+  toggleCompanion();
+});
+</script>
+</body>
+</html>
   loadLogin();
 toggleCompanion();
 </script>
