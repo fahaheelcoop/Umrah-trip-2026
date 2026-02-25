@@ -18,7 +18,16 @@ input,select{width:100%;padding:11px;border-radius:10px;border:1px solid #d8d8d8
 button{width:100%;margin-top:16px;padding:13px 16px;background:#2e7d32;color:#fff;border:0;border-radius:12px;cursor:pointer;font-size:16px}
 button:disabled{opacity:.6;cursor:not-allowed}
 .note{font-size:13px;color:#666;margin-top:8px}
-.msg{margin-top:14px;padding:12px;border-radius:12px;display:none}
+.msg{
+  margin-top:14px;
+  padding:14px 16px;
+  border-radius:12px;
+  display:none;
+  font-size:16px;
+  font-weight:700;
+  line-height:1.6;
+  text-align:center;
+}
 .err{background:#fff3f3;color:#900}
 .ok{background:#f3fff3;color:#070}
 .sep{height:1px;background:#eee;margin:16px 0}
@@ -31,10 +40,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <div class="card">
     <h2>بيانات تسجيل العمرة 2026</h2>
 
-    <!-- ✅ الرسائل -->
-    <div id="out" class="msg"></div>
-
-    <div class="grid">
+       <div class="grid">
       <div>
         <label>الرقم المدني</label>
         <input id="civil" disabled/>
@@ -114,8 +120,11 @@ button:disabled{opacity:.6;cursor:not-allowed}
     </div>
 
     <button id="btn" type="button" onclick="submitForm()">إرسال البيانات</button>
+     <!-- ✅ الرسائل -->
+    <div id="out" class="msg"></div>
     <div class="note">بالضغط على إرسال، سيتم رفع الصور إلى Google Drive وتسجيل البيانات في Google Sheets.</div>
   </div>
+  
 </div>
 
 <script>
