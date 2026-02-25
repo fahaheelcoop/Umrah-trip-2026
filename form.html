@@ -110,75 +110,33 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbwCZv09zM2yklxDhjRUf3gU3KdQpXz7zazUfFpaEftr6oLRo_Ur2g6KattcXjJY3VvZOg/exec";
 
-  // ضغط الصور
-  const IMG_MAX = 1600;     // أقصى بُعد (عرض/ارتفاع)
-  const JPG_QUALITY = 0.72; // جودة JPEG
+  const IMG_MAX = 1600;
+  const JPG_QUALITY = 0.72;
 
-  // ✅ قراءة باراميترز الرابط + تعبئة الحقول
-(function(){
-  function getParam(name){
-    try { return new URLSearchParams(window.location.search).get(name) || ""; }
-    catch(e){ return ""; }
+  function showMsg(txt, type){
+    const el = document.getElementById("msg");
+    if(!el) return;
+    el.style.display = "block";
+    el.className = "msg " + (type === "err" ? "err" : "ok");
+    el.textContent = txt;
   }
 
-  function fill(){
+  function getParam(name){
+    return new URLSearchParams(window.location.search).get(name) || "";
+  }
+
+  function fillIds_(){
     const civil = (getParam("civil_id") || sessionStorage.getItem("civil_id") || "").trim();
     const box   = (getParam("box_number") || sessionStorage.getItem("box_number") || "").trim();
 
     const civilEl = document.getElementById("civil");
     const boxEl   = document.getElementById("box");
 
-    // debug
-    console.log("fill()", { search: window.location.search, civil, box, civilEl: !!civilEl, boxEl: !!boxEl });
-
-    if (civilEl && civil) civilEl.value = civil;
-    if (boxEl && box) boxEl.value = box;
+    if (civilEl) civilEl.value = civil;
+    if (boxEl)   boxEl.value = box;
   }
 
-  document.addEventListener("DOMContentLoaded", fill);
-  window.addEventListener("pageshow", fill);
-  setTimeout(fill, 50);
-  setTimeout(fill, 500);
-})();
-
-  function getParam(name){
-  return new URLSearchParams(window.location.search).get(name) || "";
-}
-
-window.addEventListener("load", function(){
-  const civil = getParam("civil_id") || sessionStorage.getItem("civil_id") || "";
-  const box   = getParam("box_number") || sessionStorage.getItem("box_number") || "";
-
-  if (!civil || !box){
-    location.href = "login.html";
-    return;
-  }
-
-  document.getElementById("civil").value = civil;
-  document.getElementById("box").value = box;
-});
-
-  
-  function getParam(name){
-  return new URLSearchParams(window.location.search).get(name) || "";
-}
-
-function fillIds_(){
-  const civil = (getParam("civil_id") || sessionStorage.getItem("civil_id") || "").trim();
-  const box   = (getParam("box_number") || sessionStorage.getItem("box_number") || "").trim();
-
-  if (!civil || !box) return;
-
-  const civilEl = document.getElementById("civil");
-  const boxEl   = document.getElementById("box");
-
-  if (civilEl) civilEl.value = civil;
-  if (boxEl) boxEl.value = box;
-}
-
-document.addEventListener("DOMContentLoaded", fillIds_);
-window.addEventListener("pageshow", fillIds_);
-  
+  // JSONP call
   function apiCall(params){
     return new Promise((resolve, reject)=>{
       const cbName = "__cb_" + Date.now() + "_" + Math.floor(Math.random()*100000);
@@ -195,8 +153,11 @@ window.addEventListener("pageshow", fillIds_);
       };
 
       const t = setTimeout(()=>{
-        if(!done){ cleanup(); reject(new Error("TIMEOUT")); }
-      }, 30000);
+        if(!done){
+          cleanup();
+          reject(new Error("TIMEOUT"));
+        }
+      }, 20000);
 
       function cleanup(){
         clearTimeout(t);
@@ -208,45 +169,6 @@ window.addEventListener("pageshow", fillIds_);
       s.onerror = ()=>{ cleanup(); reject(new Error("NETWORK_ERROR")); };
       document.body.appendChild(s);
     });
-  }
-async function apiPost(obj){
-  const r = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(obj)
-  });
-  // GAS يرجع JSON
-  return await r.json();
-}
-  function toggleCompanion(){
-  const v = document.getElementById("has_companion").value;
-  const box = document.getElementById("companionBox");
-  box.style.display = (v !== "no") ? "block" : "none";
-
-  const nameInput = document.getElementById("c_name");
-  if (nameInput) {
-    nameInput.placeholder = (v === "mahram") ? "اسم المحرم" : "اسم الزوج/الزوجة";
-  }
-}
-
-  function showMsg(text, type){
-    const out = document.getElementById("out");
-    out.style.display="block";
-    out.className = "msg " + (type==="ok" ? "ok" : type==="err" ? "err" : "");
-    out.textContent = text;
-  }
-
-  function loadLogin(){
-    const raw = sessionStorage.getItem("umrah_login");
-    if(!raw){
-      location.href="login.html";
-      return;
-    }
-    const info = JSON.parse(raw);
-    document.getElementById("civil").value = info.civil_id || "";
-    document.getElementById("box").value = info.box_number || "";
-    if(info.full_name) document.getElementById("name").value = info.full_name;
-    if(info.mobile) document.getElementById("mobile").value = info.mobile;
   }
 
   // convert file -> compressed jpeg base64 (dataURL)
@@ -263,7 +185,8 @@ async function apiPost(obj){
           const nh = Math.round(h * scale);
 
           const canvas = document.createElement("canvas");
-          canvas.width = nw; canvas.height = nh;
+          canvas.width = nw;
+          canvas.height = nh;
           const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0, nw, nh);
 
@@ -279,84 +202,92 @@ async function apiPost(obj){
   }
 
   async function submitForm(){
-  const btn = document.getElementById("btn");
-  btn.disabled = true;
-  btn.textContent = "جاري الإرسال...";
+    const btn = document.getElementById("btn");
+    btn.disabled = true;
+    btn.textContent = "جاري الإرسال...";
 
-  let res = null;
+    let res = null;
 
-  try{
-    const civil_id = document.getElementById("civil").value.trim();
-    const box_number = document.getElementById("box").value.trim();
-    const applicant_name = document.getElementById("name").value.trim();
-    const mobile = document.getElementById("mobile").value.trim();
-    const passport_no = document.getElementById("passport_no").value.trim();
+    try{
+      const civil_id = document.getElementById("civil").value.trim();
+      const box_number = document.getElementById("box").value.trim();
+      const applicant_name = document.getElementById("name").value.trim();
+      const mobile = document.getElementById("mobile").value.trim();
+      const passport_no = document.getElementById("passport_no").value.trim();
 
-    // ملفات المتقدم
-    const fCivil = document.getElementById("app_civil_file").files[0];
-    const fPass  = document.getElementById("app_passport_file").files[0];
+      const fCivil = document.getElementById("app_civil_file").files[0];
+      const fPass  = document.getElementById("app_passport_file").files[0];
 
-    if(!fCivil || !fPass){
-      showMsg("من فضلك ارفع صورة البطاقة المدنية وصورة جواز السفر.", "err");
-      return;
+      if(!fCivil || !fPass){
+        showMsg("من فضلك ارفع صورة البطاقة المدنية وصورة جواز السفر.", "err");
+        return;
+      }
+
+      const civilImg = await fileToCompressedJpegBase64(fCivil, IMG_MAX, JPG_QUALITY);
+      const passImg  = await fileToCompressedJpegBase64(fPass, IMG_MAX, JPG_QUALITY);
+
+      const payload = {
+        civil_id,
+        box_number,
+        applicant_name,
+        mobile,
+        passport_no,
+
+        // ✅ أسماء الحقول المطابقة لكود GAS عندك:
+        applicant_civil_base64: civilImg,
+        applicant_passport_base64: passImg,
+
+        has_companion: document.getElementById("has_companion")?.value !== "no",
+        companion_type: document.getElementById("has_companion")?.value || "no",
+        companion_name: document.getElementById("c_name")?.value?.trim() || "",
+        companion_civil_id: document.getElementById("c_civil")?.value?.trim() || "",
+        companion_passport_no: document.getElementById("c_passport_no")?.value?.trim() || ""
+      };
+
+      // ملفات المرافق لو موجود
+      if (payload.has_companion){
+        const cCivilFile = document.getElementById("c_civil_file")?.files?.[0];
+        const cPassFile  = document.getElementById("c_passport_file")?.files?.[0];
+
+        if(!cCivilFile || !cPassFile){
+          showMsg("من فضلك ارفع صور المرافق (هويتي + جواز السفر).", "err");
+          return;
+        }
+
+        payload.companion_civil_base64 = await fileToCompressedJpegBase64(cCivilFile, IMG_MAX, JPG_QUALITY);
+        payload.companion_passport_base64 = await fileToCompressedJpegBase64(cPassFile, IMG_MAX, JPG_QUALITY);
+      }
+
+      res = await apiCall({ action:"submit", payload: JSON.stringify(payload) });
+
+      if(res && res.ok && res.submitted === false && res.eligibility){
+        showMsg(res.eligibility.message || "غير مؤهل.", "err");
+        return;
+      }
+
+      if(res && res.ok && res.submitted === true){
+        showMsg("تم إرسال البيانات بنجاح.", "ok");
+        return;
+      }
+
+      showMsg(res?.error || res?.message || "حصل خطأ أثناء الإرسال.", "err");
+
+    }catch(e){
+      showMsg("حصل خطأ أثناء الإرسال. حاول مرة أخرى.", "err");
+      console.error(e);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "إرسال البيانات";
     }
-
-    // 👇 هنا تضغط الصور
-    const civilImg = await fileToCompressedJpegBase64(fCivil, IMG_MAX, JPG_QUALITY);
-    const passImg  = await fileToCompressedJpegBase64(fPass, IMG_MAX, JPG_QUALITY);
-
-    // 👇 هنا تبني الـ payload
-    const payload = {
-      civil_id,
-      box_number,
-      applicant_name,
-      mobile,
-      passport_no,
-      civil_file: civilImg,
-      passport_file: passImg
-      // + بيانات المرافق لو موجود
-    };
-
-    // 👇 هنا فقط تتصل بالسيرفر
-    res = await apiPost({ action:"submit", payload: payload });
-
-    // معالجة الرد
-    if (res && res.ok && res.submitted === false && res.eligibility){
-      showMsg(res.eligibility.message, "err");
-      return;
-    }
-
-    if (res && res.ok && res.submitted === true){
-      showMsg("تم إرسال البيانات بنجاح.", "ok");
-      return;
-    }
-
-    showMsg("حصل خطأ أثناء الإرسال.", "err");
-
-  }catch(e){
-  // ✅ لو في رد وصل من السيرفر بالفعل اعرضه بدل الرسالة العامة
-  if (res && res.eligibility && res.eligibility.message) {
-    showMsg(res.eligibility.message, "err");
-  } else if (res && (res.error || res.message)) {
-    showMsg(res.error || res.message, "err");
-  } else {
-    showMsg("حصل خطأ أثناء الإرسال. حاول مرة أخرى.", "err");
   }
-}finally{
-  btn.disabled = false;
-  btn.textContent = "إرسال البيانات";
-} // ✅ دي كانت ناقصة: قفلة دالة submitForm
 
-// ✅ شغّل التهيئة بعد تحميل الصفحة
-document.addEventListener("DOMContentLoaded", () => {
-  loadLogin();
-  toggleCompanion();
-});
-</script>
-</body>
-</html>
-  loadLogin();
-toggleCompanion();
+  document.addEventListener("DOMContentLoaded", ()=>{
+    fillIds_();
+    // لو عندك toggleCompanion موجودة
+    if (typeof toggleCompanion === "function") toggleCompanion();
+  });
+
+  window.addEventListener("pageshow", fillIds_);
 </script>
 </body>
 </html>
