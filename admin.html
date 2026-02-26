@@ -28,8 +28,23 @@
     a{color:#2e7d32;text-decoration:none}
     .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef2ff;border:1px solid #e5e7eb;font-size:12px}
     .small{font-size:12px;color:#666}
+
+    /* Modal */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;padding:18px}
+    .modal .box{max-width:980px;margin:auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .modal .head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#fafafa;border-bottom:1px solid #eee}
+    .modal .head b{font-size:14px}
+    .modal .close{background:#777;border:0;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+    .modal .content{padding:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .imgCard{border:1px solid #eee;border-radius:14px;padding:10px;background:#fff}
+    .imgCard .title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .imgCard img{width:100%;height:auto;border-radius:12px;border:1px solid #eee;background:#f7f7f7}
+    .imgCard .fallback{padding:14px;border-radius:12px;background:#fafafa;border:1px dashed #ddd;text-align:center;color:#777}
+    .imgCard .openLink{font-size:12px}
+
     @media (max-width: 980px){
       .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .modal .content{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -66,15 +81,29 @@
           <option value="YES">نعم</option>
           <option value="NO">لا</option>
         </select>
-        <input id="f_status" placeholder="Status (مثال: RECEIVED)" style="min-width:200px">
+
+        <!-- ✅ Status filter as dropdown -->
+        <select id="f_status" style="min-width:220px">
+          <option value="">Status: الكل</option>
+          <option value="PENDING">PENDING</option>
+          <option value="RECEIVED">RECEIVED</option>
+          <option value="APPROVED">APPROVED</option>
+          <option value="REJECTED">REJECTED</option>
+          <option value="CANCELLED">CANCELLED</option>
+        </select>
+
         <button id="btnSearch" onclick="loadList(0)">بحث</button>
         <button onclick="refreshAll()">تحديث</button>
+
+        <!-- ✅ Export CSV -->
+        <button style="background:#0f766e" onclick="exportCSV()">Export CSV</button>
+
         <button style="background:#777" onclick="logout()">خروج</button>
       </div>
 
       <div class="small" style="margin-top:8px">
-        <span class="pill">نصيحة</span>
-        اكتب status بالظبط زي اللي في الشيت (RECEIVED / APPROVED / REJECTED ... الخ)
+        <span class="pill">ملاحظة</span>
+        تحديث الـ status يتم من القائمة مباشرة ثم “حفظ”.
       </div>
 
       <div style="overflow:auto;margin-top:10px">
@@ -106,9 +135,43 @@
   </div>
 </div>
 
+<!-- ✅ Image Modal -->
+<div id="imgModal" class="modal" onclick="modalBackdropClose(event)">
+  <div class="box" onclick="event.stopPropagation()">
+    <div class="head">
+      <b id="imgModalTitle">عرض الصور</b>
+      <button class="close" onclick="closeImgModal()">إغلاق</button>
+    </div>
+    <div class="content">
+      <div class="imgCard">
+        <div class="title">
+          <b>صور المسافر</b>
+          <a id="travOpen1" class="openLink" target="_blank" rel="noopener" href="#" style="display:none">فتح الأصل</a>
+        </div>
+        <img id="travImg1" alt="هوية المسافر" style="display:none">
+        <div id="travFallback1" class="fallback">لا توجد صور للمسافر.</div>
+        <div class="small" style="margin-top:8px" id="travLinks"></div>
+      </div>
+
+      <div class="imgCard">
+        <div class="title">
+          <b>صور المرافق</b>
+          <a id="compOpen1" class="openLink" target="_blank" rel="noopener" href="#" style="display:none">فتح الأصل</a>
+        </div>
+        <img id="compImg1" alt="هوية المرافق" style="display:none">
+        <div id="compFallback1" class="fallback">لا يوجد مرافق / لا توجد صور.</div>
+        <div class="small" style="margin-top:8px" id="compLinks"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbwCZv09zM2yklxDhjRUf3gU3KdQpXz7zazUfFpaEftr6oLRo_Ur2g6KattcXjJY3VvZOg/exec";
   const PAGE_SIZE = 25;
+
+  // ✅ allowed statuses (used for dropdown in rows)
+  const STATUS_OPTIONS = ["PENDING","RECEIVED","APPROVED","REJECTED","CANCELLED"];
 
   let token = localStorage.getItem("umrah_admin_token") || "";
   let offset = 0;
@@ -255,17 +318,31 @@
         `
         : `<div class="small">لا يوجد مرافق</div>`;
 
-      const links = `
-        <div class="actions">
-          ${x.applicant_civil_link ? `<a target="_blank" rel="noopener" href="${x.applicant_civil_link}">هوية المسافر</a>` : `<span class="small">هوية المسافر: -</span>`}
-          ${x.applicant_passport_link ? `<a target="_blank" rel="noopener" href="${x.applicant_passport_link}">جواز المسافر</a>` : `<span class="small">جواز المسافر: -</span>`}
-          ${x.companion_civil_link ? `<a target="_blank" rel="noopener" href="${x.companion_civil_link}">هوية المرافق</a>` : ``}
-          ${x.companion_passport_link ? `<a target="_blank" rel="noopener" href="${x.companion_passport_link}">جواز المرافق</a>` : ``}
+      // ✅ one "View Images" button (modal)
+      const photosBtn = `
+        <button style="background:#2563eb" onclick="openImgModal(
+          '${escJs(x.request_id)}',
+          '${escJs(x.applicant_civil_link||"")}',
+          '${escJs(x.applicant_passport_link||"")}',
+          '${escJs(x.companion_civil_link||"")}',
+          '${escJs(x.companion_passport_link||"")}'
+        )">عرض الصور</button>
+        <div class="small" style="margin-top:6px">
+          ${x.applicant_civil_link || x.applicant_passport_link ? `<span class="pill">مسافر</span>` : ``}
+          ${x.companion_civil_link || x.companion_passport_link ? `<span class="pill">مرافق</span>` : ``}
         </div>
       `;
 
+      // ✅ status dropdown per row
+      const cur = String(x.status||"").trim().toUpperCase();
+      const options = STATUS_OPTIONS.map(s => `<option value="${s}" ${s===cur?'selected':''}>${s}</option>`).join("");
       const stSel = `
-        <input id="st_${escId(x.request_id)}" value="${escAttr(x.status||"")}" style="min-width:160px">
+        <select id="st_${escId(x.request_id)}" style="min-width:170px">
+          <option value="">-- اختر --</option>
+          ${options}
+          ${(!STATUS_OPTIONS.includes(cur) && cur) ? `<option value="${escAttr(cur)}" selected>${esc(cur)} (قديم)</option>` : ``}
+        </select>
+        ${cur && !STATUS_OPTIONS.includes(cur) ? `<div class="small">⚠️ Status غير ضمن القائمة (تم إبقاؤه)</div>` : ``}
       `;
 
       const act = `
@@ -278,7 +355,7 @@
         <td><div><b>${esc(x.request_id||"-")}</b></div></td>
         <td>${traveler}</td>
         <td>${comp}</td>
-        <td>${links}</td>
+        <td>${photosBtn}</td>
         <td>${stSel}</td>
         <td>${act}</td>
       `;
@@ -287,9 +364,9 @@
   }
 
   async function saveStatus(requestId){
-    const input = document.getElementById("st_" + escId(requestId));
-    const newStatus = (input?.value || "").trim();
-    if(!newStatus){ show("اكتب status أولاً.", "err"); return; }
+    const sel = document.getElementById("st_" + escId(requestId));
+    const newStatus = (sel?.value || "").trim();
+    if(!newStatus){ show("اختر status أولاً.", "err"); return; }
 
     const r = await apiPost({ action:"admin_update_status", token, request_id: requestId, status: newStatus });
     if(r && r.ok && r.updated){
@@ -309,8 +386,8 @@
     document.getElementById("prev").disabled = offset <= 0;
     document.getElementById("next").disabled = (offset + PAGE_SIZE) >= total;
   }
-  function prevPage(){ loadList(offset - PAGE_SIZE); }
-  function nextPage(){ loadList(offset + PAGE_SIZE); }
+  function prevPage(){ hideMsg(); loadList(offset - PAGE_SIZE); }
+  function nextPage(){ hideMsg(); loadList(offset + PAGE_SIZE); }
 
   function fmtDate(v){
     try{
@@ -318,6 +395,64 @@
       if(isNaN(d)) return esc(String(v||""));
       return d.toLocaleString("ar-KW");
     }catch(e){ return esc(String(v||"")); }
+  }
+
+  // ✅ Export CSV (requires GAS action admin_export_csv)
+  function exportCSV(){
+    if(!token){ show("سجّل دخول أولاً.", "err"); return; }
+    const url = API_URL + "?action=admin_export_csv&token=" + encodeURIComponent(token);
+    window.open(url, "_blank");
+  }
+
+  // ✅ Modal images
+  function openImgModal(requestId, aCivil, aPass, cCivil, cPass){
+    document.getElementById("imgModalTitle").textContent = "عرض الصور - " + (requestId || "");
+
+    // traveler
+    const travLinks = [];
+    if(aCivil) travLinks.push(`<a target="_blank" rel="noopener" href="${escAttr(aCivil)}">هوية المسافر</a>`);
+    if(aPass)  travLinks.push(`<a target="_blank" rel="noopener" href="${escAttr(aPass)}">جواز المسافر</a>`);
+    document.getElementById("travLinks").innerHTML = travLinks.length ? travLinks.join(" | ") : "";
+
+    // companion
+    const compLinks = [];
+    if(cCivil) compLinks.push(`<a target="_blank" rel="noopener" href="${escAttr(cCivil)}">هوية المرافق</a>`);
+    if(cPass)  compLinks.push(`<a target="_blank" rel="noopener" href="${escAttr(cPass)}">جواز المرافق</a>`);
+    document.getElementById("compLinks").innerHTML = compLinks.length ? compLinks.join(" | ") : "";
+
+    // show one image preview per card (prefer civil then passport)
+    setImgPreview("trav", aCivil || aPass, !!(aCivil || aPass));
+    setImgPreview("comp", cCivil || cPass, !!(cCivil || cPass));
+
+    document.getElementById("imgModal").style.display = "block";
+  }
+
+  function setImgPreview(prefix, url, hasAny){
+    const img = document.getElementById(prefix + "Img1");
+    const fb  = document.getElementById(prefix + "Fallback1");
+    const open = document.getElementById(prefix + "Open1");
+
+    if(hasAny && url){
+      img.src = url;
+      img.style.display = "block";
+      fb.style.display = "none";
+      open.href = url;
+      open.style.display = "inline";
+    }else{
+      img.removeAttribute("src");
+      img.style.display = "none";
+      fb.style.display = "block";
+      open.href = "#";
+      open.style.display = "none";
+    }
+  }
+
+  function closeImgModal(){
+    document.getElementById("imgModal").style.display = "none";
+  }
+  function modalBackdropClose(e){
+    // clicking backdrop closes
+    closeImgModal();
   }
 
   // helpers escaping
@@ -328,6 +463,11 @@
 
   // auto-login if token exists
   document.addEventListener("DOMContentLoaded", async ()=>{
+    // Enter triggers search
+    document.getElementById("q").addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){ loadList(0); }
+    });
+
     if(token){
       document.getElementById("loginBox").style.display = "none";
       document.getElementById("adminBox").style.display = "block";
