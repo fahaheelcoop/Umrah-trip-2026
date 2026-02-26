@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>لوحة التحكم - عمرة 2026</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;background:#f6f7fb;margin:0;padding:24px}
+    .wrap{max-width:1200px;margin:auto}
+    .card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    h2{margin:0 0 12px;text-align:center}
+    .muted{color:#666;text-align:center;margin:0 0 16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    input,select,button{padding:11px 12px;border-radius:10px;border:1px solid #d8d8d8;font-size:14px}
+    button{background:#2e7d32;color:#fff;border:0;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .stat{background:#fafafa;border:1px solid #eee;border-radius:14px;padding:12px}
+    .stat b{display:block;font-size:18px;margin-top:4px}
+    .msg{margin:12px 0;padding:12px;border-radius:12px;display:none}
+    .ok{background:#f3fff3;color:#070}
+    .err{background:#fff3f3;color:#900}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border-bottom:1px solid #eee;padding:10px;vertical-align:top;font-size:13px}
+    th{background:#fafafa;text-align:right}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    a{color:#2e7d32;text-decoration:none}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef2ff;border:1px solid #e5e7eb;font-size:12px}
+    .small{font-size:12px;color:#666}
+    @media (max-width: 980px){
+      .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h2>لوحة التحكم - تسجيل عمرة 2026</h2>
+    <p class="muted">إحصائيات + بحث + تحديث حالة الطلب</p>
+
+    <div id="msg" class="msg"></div>
+
+    <!-- Login -->
+    <div id="loginBox">
+      <div class="row" style="justify-content:center">
+        <input id="pw" type="password" placeholder="كلمة مرور الأدمن" style="min-width:280px">
+        <button id="btnLogin" onclick="login()">دخول</button>
+      </div>
+      <p class="muted small">يتم حفظ التوكن في المتصفح لمدة محدودة.</p>
+    </div>
+
+    <!-- Admin -->
+    <div id="adminBox" style="display:none">
+      <div class="grid" style="margin-top:10px">
+        <div class="stat">إجمالي الطلبات<b id="st_total">0</b></div>
+        <div class="stat">طلبات بمرافق<b id="st_with">0</b></div>
+        <div class="stat">بدون مرافق<b id="st_without">0</b></div>
+        <div class="stat">حالات الطلب<b id="st_statuses">-</b></div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <input id="q" placeholder="بحث: رقم مدني / صندوق / اسم / request_id" style="flex:1;min-width:260px">
+        <select id="f_has">
+          <option value="">مرافق: الكل</option>
+          <option value="YES">نعم</option>
+          <option value="NO">لا</option>
+        </select>
+        <input id="f_status" placeholder="Status (مثال: RECEIVED)" style="min-width:200px">
+        <button id="btnSearch" onclick="loadList(0)">بحث</button>
+        <button onclick="refreshAll()">تحديث</button>
+        <button style="background:#777" onclick="logout()">خروج</button>
+      </div>
+
+      <div class="small" style="margin-top:8px">
+        <span class="pill">نصيحة</span>
+        اكتب status بالظبط زي اللي في الشيت (RECEIVED / APPROVED / REJECTED ... الخ)
+      </div>
+
+      <div style="overflow:auto;margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th>الوقت</th>
+              <th>request_id</th>
+              <th>المسافر</th>
+              <th>المرافق</th>
+              <th>الصور</th>
+              <th>status</th>
+              <th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="row" style="justify-content:space-between;margin-top:12px">
+        <div class="small" id="pageInfo"></div>
+        <div class="row">
+          <button id="prev" onclick="prevPage()">السابق</button>
+          <button id="next" onclick="nextPage()">التالي</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbwCZv09zM2yklxDhjRUf3gU3KdQpXz7zazUfFpaEftr6oLRo_Ur2g6KattcXjJY3VvZOg/exec";
+  const PAGE_SIZE = 25;
+
+  let token = localStorage.getItem("umrah_admin_token") || "";
+  let offset = 0;
+  let total = 0;
+
+  function show(txt, type){
+    const el = document.getElementById("msg");
+    el.style.display = "block";
+    el.className = "msg " + (type==="err" ? "err":"ok");
+    el.textContent = txt;
+  }
+  function hideMsg(){ const el=document.getElementById("msg"); el.style.display="none"; }
+
+  async function apiPost(obj, timeoutMs=60000){
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), timeoutMs);
+    try{
+      const r = await fetch(API_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"text/plain;charset=utf-8" },
+        body: JSON.stringify(obj),
+        signal: ctrl.signal
+      });
+      const t = await r.text();
+      let data;
+      try{ data = JSON.parse(t); }catch(e){ data = {ok:false,error:"BAD_JSON",message:t.slice(0,250)}; }
+      if(!r.ok) return { ok:false, error:"HTTP_"+r.status, message:data.message||("HTTP "+r.status) };
+      return data;
+    }catch(e){
+      if(e.name==="AbortError") return {ok:false,error:"TIMEOUT",message:"الاتصال اتأخر. حاول تاني."};
+      return {ok:false,error:"NETWORK_ERROR",message:"مشكلة اتصال. حاول تاني."};
+    }finally{
+      clearTimeout(timer);
+    }
+  }
+
+  async function login(){
+    hideMsg();
+    const pw = (document.getElementById("pw").value || "");
+    const btn = document.getElementById("btnLogin");
+    btn.disabled = true;
+    try{
+      const r = await apiPost({ action:"admin_login", password: pw });
+      if(r && r.ok && r.loggedIn){
+        token = r.token;
+        localStorage.setItem("umrah_admin_token", token);
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("adminBox").style.display = "block";
+        await refreshAll();
+        show("تم تسجيل الدخول.", "ok");
+      }else{
+        show(r.message || "كلمة المرور غير صحيحة.", "err");
+      }
+    }finally{
+      btn.disabled = false;
+    }
+  }
+
+  function logout(){
+    localStorage.removeItem("umrah_admin_token");
+    token = "";
+    document.getElementById("adminBox").style.display = "none";
+    document.getElementById("loginBox").style.display = "block";
+    show("تم تسجيل الخروج.", "ok");
+  }
+
+  async function refreshAll(){
+    await loadStats();
+    await loadList(0);
+  }
+
+  async function loadStats(){
+    const r = await apiPost({ action:"admin_stats", token });
+    if(!r || !r.ok){
+      show(r.message || r.error || "فشل تحميل الإحصائيات.", "err");
+      if(String(r.error||"").includes("ADMIN_") || String(r.error||"").includes("TOKEN")) logout();
+      return;
+    }
+    document.getElementById("st_total").textContent = r.total ?? 0;
+    document.getElementById("st_with").textContent = r.with_companion ?? 0;
+    document.getElementById("st_without").textContent = r.without_companion ?? 0;
+
+    const st = r.statuses || {};
+    const parts = Object.keys(st).map(k => `${k}:${st[k]}`);
+    document.getElementById("st_statuses").textContent = parts.length ? parts.join(" | ") : "-";
+  }
+
+  function getFilters(){
+    return {
+      status: (document.getElementById("f_status").value || "").trim(),
+      has_companion: (document.getElementById("f_has").value || "").trim()
+    };
+  }
+
+  async function loadList(newOffset){
+    hideMsg();
+    offset = Math.max(0, newOffset || 0);
+    const btn = document.getElementById("btnSearch");
+    btn.disabled = true;
+    try{
+      const r = await apiPost({
+        action:"admin_list",
+        token,
+        q: (document.getElementById("q").value || "").trim(),
+        limit: PAGE_SIZE,
+        offset,
+        filters: getFilters()
+      });
+
+      if(!r || !r.ok){
+        show(r.message || r.error || "فشل تحميل البيانات.", "err");
+        if(String(r.error||"").includes("ADMIN_") || String(r.error||"").includes("TOKEN")) logout();
+        return;
+      }
+
+      total = r.total || 0;
+      renderRows(r.rows || []);
+      renderPager();
+    }finally{
+      btn.disabled = false;
+    }
+  }
+
+  function renderRows(rows){
+    const tb = document.getElementById("rows");
+    tb.innerHTML = "";
+
+    if(!rows.length){
+      tb.innerHTML = `<tr><td colspan="7" class="small">لا توجد نتائج.</td></tr>`;
+      return;
+    }
+
+    for(const x of rows){
+      const traveler = `
+        <div><b>${esc(x.applicant_name||"-")}</b></div>
+        <div class="small">مدني: ${esc(x.civil_id||"-")} | صندوق: ${esc(x.box_number||"-")}</div>
+        <div class="small">موبايل: ${esc(x.mobile||"-")} | جواز: ${esc(x.passport_no||"-")}</div>
+      `;
+
+      const comp = (String(x.has_companion||"").toUpperCase()==="YES")
+        ? `
+          <div><b>${esc(x.companion_name||"-")}</b> <span class="pill">${esc(x.companion_type||"")}</span></div>
+          <div class="small">مدني: ${esc(x.companion_civil_id||"-")} | جواز: ${esc(x.companion_passport_no||"-")}</div>
+        `
+        : `<div class="small">لا يوجد مرافق</div>`;
+
+      const links = `
+        <div class="actions">
+          ${x.applicant_civil_link ? `<a target="_blank" rel="noopener" href="${x.applicant_civil_link}">هوية المسافر</a>` : `<span class="small">هوية المسافر: -</span>`}
+          ${x.applicant_passport_link ? `<a target="_blank" rel="noopener" href="${x.applicant_passport_link}">جواز المسافر</a>` : `<span class="small">جواز المسافر: -</span>`}
+          ${x.companion_civil_link ? `<a target="_blank" rel="noopener" href="${x.companion_civil_link}">هوية المرافق</a>` : ``}
+          ${x.companion_passport_link ? `<a target="_blank" rel="noopener" href="${x.companion_passport_link}">جواز المرافق</a>` : ``}
+        </div>
+      `;
+
+      const stSel = `
+        <input id="st_${escId(x.request_id)}" value="${escAttr(x.status||"")}" style="min-width:160px">
+      `;
+
+      const act = `
+        <button onclick="saveStatus('${escJs(x.request_id)}')">حفظ</button>
+      `;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${fmtDate(x.timestamp)}</td>
+        <td><div><b>${esc(x.request_id||"-")}</b></div></td>
+        <td>${traveler}</td>
+        <td>${comp}</td>
+        <td>${links}</td>
+        <td>${stSel}</td>
+        <td>${act}</td>
+      `;
+      tb.appendChild(tr);
+    }
+  }
+
+  async function saveStatus(requestId){
+    const input = document.getElementById("st_" + escId(requestId));
+    const newStatus = (input?.value || "").trim();
+    if(!newStatus){ show("اكتب status أولاً.", "err"); return; }
+
+    const r = await apiPost({ action:"admin_update_status", token, request_id: requestId, status: newStatus });
+    if(r && r.ok && r.updated){
+      show("تم تحديث الحالة.", "ok");
+      await loadStats();
+    }else{
+      show(r.message || r.error || "لم يتم التحديث.", "err");
+      if(String(r.error||"").includes("ADMIN_") || String(r.error||"").includes("TOKEN")) logout();
+    }
+  }
+
+  function renderPager(){
+    const from = total ? offset + 1 : 0;
+    const to = Math.min(offset + PAGE_SIZE, total);
+    document.getElementById("pageInfo").textContent = `عرض ${from} إلى ${to} من إجمالي ${total}`;
+
+    document.getElementById("prev").disabled = offset <= 0;
+    document.getElementById("next").disabled = (offset + PAGE_SIZE) >= total;
+  }
+  function prevPage(){ loadList(offset - PAGE_SIZE); }
+  function nextPage(){ loadList(offset + PAGE_SIZE); }
+
+  function fmtDate(v){
+    try{
+      const d = new Date(v);
+      if(isNaN(d)) return esc(String(v||""));
+      return d.toLocaleString("ar-KW");
+    }catch(e){ return esc(String(v||"")); }
+  }
+
+  // helpers escaping
+  function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+  function escAttr(s){ return String(s??"").replace(/"/g,"&quot;"); }
+  function escJs(s){ return String(s??"").replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
+  function escId(s){ return String(s??"").replace(/[^a-zA-Z0-9_-]/g,"_"); }
+
+  // auto-login if token exists
+  document.addEventListener("DOMContentLoaded", async ()=>{
+    if(token){
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("adminBox").style.display = "block";
+      await refreshAll();
+    }
+  });
+</script>
+</body>
+</html>
