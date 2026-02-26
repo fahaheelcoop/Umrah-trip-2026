@@ -75,7 +75,20 @@
       </div>
 
       <div class="row" style="margin-top:14px">
+
+        <!-- ✅ NEW: Search Type Dropdown -->
+        <select id="q_type" style="min-width:220px" onchange="onSearchTypeChange()">
+          <option value="">نوع البحث: الكل</option>
+          <option value="box">رقم الصندوق (تطابق كامل)</option>
+          <option value="civil">الرقم المدني</option>
+          <option value="name">الاسم</option>
+          <option value="request">request_id</option>
+          <option value="mobile">رقم الموبايل</option>
+          <option value="passport">رقم الجواز</option>
+        </select>
+
         <input id="q" placeholder="بحث: رقم مدني / صندوق / اسم / request_id" style="flex:1;min-width:260px">
+
         <select id="f_has">
           <option value="">مرافق: الكل</option>
           <option value="YES">نعم</option>
@@ -266,6 +279,34 @@
     };
   }
 
+  // ✅ NEW: search type handling (dropdown)
+  function getSearchType(){
+    return (document.getElementById("q_type").value || "").trim(); // "" | box | civil | ...
+  }
+
+  function onSearchTypeChange(){
+    const t = getSearchType();
+    const q = document.getElementById("q");
+
+    const ph = {
+      "":       "بحث: رقم مدني / صندوق / اسم / request_id",
+      "box":    "اكتب رقم الصندوق فقط (تطابق كامل) مثال: 5 أو 12",
+      "civil":  "اكتب الرقم المدني",
+      "name":   "اكتب اسم المسافر أو المرافق",
+      "request":"اكتب request_id",
+      "mobile": "اكتب رقم الموبايل",
+      "passport":"اكتب رقم الجواز"
+    };
+    q.placeholder = ph[t] || ph[""];
+
+    // تحسين تجربة: لو صندوق/مدني/موبايل/جواز => inputmode numeric
+    if(t==="box" || t==="civil" || t==="mobile" || t==="passport"){
+      q.setAttribute("inputmode","numeric");
+    }else{
+      q.removeAttribute("inputmode");
+    }
+  }
+
   async function loadList(newOffset){
     hideMsg();
     offset = Math.max(0, newOffset || 0);
@@ -275,6 +316,7 @@
       const r = await apiPost({
         action:"admin_list",
         token,
+        q_type: getSearchType(), // ✅ NEW
         q: (document.getElementById("q").value || "").trim(),
         limit: PAGE_SIZE,
         offset,
@@ -467,6 +509,9 @@
     document.getElementById("q").addEventListener("keydown", (e)=>{
       if(e.key === "Enter"){ loadList(0); }
     });
+
+    // ✅ init placeholder according to dropdown
+    onSearchTypeChange();
 
     if(token){
       document.getElementById("loginBox").style.display = "none";
